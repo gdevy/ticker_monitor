@@ -1,9 +1,9 @@
 import time
 
-import tqdm
+from utility_soup.iter import ForLoopTimer
 
 from common.db import connect
-from common.featurizers import counter, text_analysis, info
+from common.featurizers import counter, info
 from common.praw_interface import iterate_comment_forest, auth_praw
 
 if __name__ == '__main__':
@@ -18,11 +18,14 @@ if __name__ == '__main__':
     post_collection = db['post']
     comment_collection = db['comment']
 
-    posts = post_collection.find({}, limit=1)
+    posts = post_collection.find({}, limit=2)
     start = time.time()
 
-    for post in tqdm.tqdm(posts):
+    timer = ForLoopTimer()
+    for post in timer(posts):
         results = iterate_comment_forest(reddit.submission(post['post_id']).comments,
-                                         featurizers=[counter, text_analysis, info])
+                                         featurizers=[counter, info])
+        if results:
+            comment_collection.insert_many(results)
 
-        comment_collection.insert_many(results)
+    print(timer)

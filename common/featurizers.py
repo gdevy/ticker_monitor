@@ -17,7 +17,7 @@ tickers = ['AMC', 'CLOV', 'BABA', 'GME', 'SPY', 'WISH', 'PLTR', 'FAS', 'SKLZ', '
 
 tickers = list(map(str.lower, tickers))
 
-Featurizer = Callable[[Comment, Comment, Submission, int], Tuple[Dict, Dict]]
+Featurizer = Callable[[Comment, Comment, Submission, int], Dict]
 
 
 def featurizer(version: int):
@@ -26,7 +26,7 @@ def featurizer(version: int):
         def returned(comment: Comment, *args, **kwargs):
             result = func(comment, *args, **kwargs)
 
-            return result, {'id': comment.id, 'name': func.__name__, 'version': version}
+            return {'id': comment.id, 'name': func.__name__, 'version': version, 'features': result}
 
         return returned
 
@@ -54,7 +54,7 @@ def info(comment: Comment, root: Comment, thread: Submission, depth: int):
 
 @featurizer(version=1)
 def counter(comment: Comment, root: Comment, thread: Submission, depth: int):
-    d = dict()
-    for t in tickers:
-        d[t] = comment.body.lower().count(t)
-    return d
+    vector = [0] * len(tickers)
+    for idx, t in enumerate(tickers):
+        vector[idx] = comment.body.lower().count(t)
+    return {'vector': vector}

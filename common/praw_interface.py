@@ -56,9 +56,8 @@ def iterate_comment_forest(
         if depth == 0:
             root = comment
         for f in featurizers:
-            features, f_desc = f(comment, root, thread, depth)
-            print(features, f_desc)
-            results.append({'features': features, 'featurizer_info': f_desc})
+            features = f(comment, root, thread, depth)
+            print(features)
         next_results = iterate_comment_forest(comment.replies, featurizers, depth + 1, thread, root)
         results.extend(next_results)
 
