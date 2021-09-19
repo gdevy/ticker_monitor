@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Union, Callable, List, Dict
+from typing import Union, List, Dict, Tuple
 
 import dotenv
 
@@ -9,7 +9,7 @@ from praw.models import MoreComments
 from praw.models.comment_forest import CommentForest
 from praw.reddit import Comment, Submission
 
-from common.featurizers import Featurizer
+from common.featurizers import Featurizer, comment_info, extract_features
 
 logger = logging.getLogger(__name__)
 
@@ -44,21 +44,20 @@ def print_comment_chain(comment: Union[Comment, MoreComments], depth=0):
 
 def iterate_comment_forest(
         comment_forest: CommentForest,
-        featurizers: List[Featurizer],
         depth=0,
         thread: Submission = None,
         root: Comment = None
-) -> List[Dict]:
-    results = []
+) -> List[Tuple[Comment, Dict]]:
+    comments = []
+
     for comment in comment_forest:
         if isinstance(comment, MoreComments):
             continue
+
         if depth == 0:
             root = comment
-        for f in featurizers:
-            features = f(comment, root, thread, depth)
-            print(features)
-        next_results = iterate_comment_forest(comment.replies, featurizers, depth + 1, thread, root)
-        results.extend(next_results)
 
-    return results
+        comments.append((comment, comment_info(comment, depth)))
+        comments.extend(iterate_comment_forest(comment.replies, depth + 1, thread, root))
+
+    return comments

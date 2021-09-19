@@ -1,7 +1,10 @@
 import functools
-from typing import Dict, Tuple, Callable, get_type_hints
+import logging
+from typing import Dict, Callable, List
 
 from praw.reddit import Comment, Submission
+
+logger = logging.getLogger(__name__)
 
 tickers = ['AMC', 'CLOV', 'BABA', 'GME', 'SPY', 'WISH', 'PLTR', 'FAS', 'SKLZ', 'PFE', 'MVST', 'CRSR', 'MSFT', 'BB',
            'HOOD', 'GEO', 'CLNE', 'TSLA', 'MRNA', 'SOFI', 'AVPT', 'CLF', 'AMZN', 'YOU', 'DDD', 'NVDA', 'BIDU', 'TLRY',
@@ -17,33 +20,26 @@ tickers = ['AMC', 'CLOV', 'BABA', 'GME', 'SPY', 'WISH', 'PLTR', 'FAS', 'SKLZ', '
 
 tickers = list(map(str.lower, tickers))
 
-Featurizer = Callable[[Comment, Comment, Submission, int], Dict]
+Featurizer = Callable[[Comment, Submission, int], Dict]
 
 
-def featurizer(version: int):
-    def wrapped(func):
-        @functools.wraps(func)
-        def returned(comment: Comment, *args, **kwargs):
-            result = func(comment, *args, **kwargs)
+def extract_features(
+        comment: Comment,
+        thread: Submission,
+        depth: int,
+        featurizers: List[Featurizer],
+) -> List[Dict]:
+    features = []
 
-            return {'id': comment.id, 'name': func.__name__, 'version': version, 'features': result}
+    for f in featurizers:
+        feature = f(comment, thread, depth)
+        logger.debug(feature)
+        features.append(feature)
 
-        return returned
-
-    return wrapped
-
-
-@featurizer(version=1)
-def text_analysis(comment: Comment, root: Comment, thread: Submission, depth: int):
-    d = {
-        'body_to_parent': len(comment.body) / len(comment.parent().body) if depth != 0 else None,
-        'body_to_root': len(comment.body) / len(root.body) if depth != 0 else None,
-    }
-    return d
+    return features
 
 
-@featurizer(version=1)
-def info(comment: Comment, root: Comment, thread: Submission, depth: int):
+def comment_info(comment: Comment, depth: int):
     return {
         'depth': depth,
         'score': comment.score,
@@ -52,8 +48,34 @@ def info(comment: Comment, root: Comment, thread: Submission, depth: int):
     }
 
 
+def featurizer(version: int):
+    def wrapped(func):
+        @functools.wraps(func)
+        def returned(comment: Comment, *args, **kwargs):
+            result = func(comment, *args, **kwargs)
+
+            return {
+                'name': func.__name__,
+                'version': version,
+                'comment_id': comment.id,
+                **result}
+
+        return returned
+
+    return wrapped
+
+
 @featurizer(version=1)
-def counter(comment: Comment, root: Comment, thread: Submission, depth: int):
+def text_analysis(comment: Comment, thread: Submission, depth: int):
+    d = {
+        'body_to_parent': len(comment.body) / len(comment.parent().body) if depth != 0 else None,
+        'body_to_submission': len(comment.body) / len(thread.selftext) if depth != 0 else None,
+    }
+    return d
+
+
+@featurizer(version=1)
+def counter(comment: Comment, thread: Submission, depth: int):
     vector = [0] * len(tickers)
     for idx, t in enumerate(tickers):
         vector[idx] = comment.body.lower().count(t)

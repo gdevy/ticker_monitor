@@ -1,15 +1,40 @@
 import os
 import urllib
+from datetime import datetime
+from typing import List, Dict
 
 import pymongo as pymongo
 from pymongo.database import Database
 
 
-def connect() -> Database:
-    db_user = urllib.parse.quote_plus(os.environ['MONGODB_USER'])
-    db_pass = urllib.parse.quote_plus(os.environ['MONGODB_PASSWORD'])
+class DBConnector:
+    def __new__(cls):
+        if not hasattr(cls, 'instance'):
+            cls.instance = super(DBConnector, cls).__new__(cls)
+        return cls.instance
 
-    client = pymongo.MongoClient(
-        f"mongodb+srv://{db_user}:{db_pass}@cluster0.audbf.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
+    def __init__(self):
+        import dotenv
 
-    return client['ticker_counter']
+        dotenv.load_dotenv()
+
+        db_user = urllib.parse.quote_plus(os.environ['MONGODB_USER'])
+        db_pass = urllib.parse.quote_plus(os.environ['MONGODB_PASSWORD'])
+
+        client = pymongo.MongoClient(
+            f"mongodb+srv://{db_user}:{db_pass}@cluster0.audbf.mongodb.net/ticker_counter?retryWrites=true&w=majority")
+
+        self.db = client.get_default_database()
+
+
+db: Database = DBConnector().db
+
+
+def get_posts(start: datetime) -> List[Dict]:
+    found = db['post'].find({
+        'posted_utc': [
+            {'$gt': start},
+        ]
+    })
+
+    return list(found)

@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 from pymongo.collection import Collection
 
-from common.db import connect
+from common.db import db
 from common.push_shift_interface import get_posts
 
 if __name__ == '__main__':
@@ -14,9 +14,9 @@ if __name__ == '__main__':
 
     posts = get_posts('wallstreetbets',
                       end=datetime.now(),
-                      start=datetime.now() - timedelta(days=30))
+                      start=datetime.now() - timedelta(hours=1))
 
-    db: Collection = connect()['post']
+    post_collection: Collection = db['post']
 
-    inserted = db.insert_many(posts)
+    inserted = post_collection.insert_many(posts)
     print(len(inserted.inserted_ids))
