@@ -44,7 +44,8 @@ def comment_info(comment: Comment, depth: int):
         'depth': depth,
         'score': comment.score,
         'created_utc': comment.created_utc,
-        'submission_id': comment.submission.id
+        'submission_id': comment.submission.id,
+        'comment_id': comment.id,
     }
 
 

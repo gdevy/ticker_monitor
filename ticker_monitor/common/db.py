@@ -38,3 +38,16 @@ def get_posts(start: datetime) -> List[Dict]:
     })
 
     return list(found)
+
+
+indexes = {
+    'feature': [
+        [('name', pymongo.DESCENDING), ('version', pymongo.DESCENDING), ('comment_id', pymongo.DESCENDING), ],
+    ],
+    'post': [
+        'post_id',
+    ],
+    'comment': [
+        'comment_id',
+    ]
+}

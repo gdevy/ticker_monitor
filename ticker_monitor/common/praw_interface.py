@@ -9,7 +9,7 @@ from praw.models import MoreComments
 from praw.models.comment_forest import CommentForest
 from praw.reddit import Comment, Submission
 
-from common.featurizers import Featurizer, comment_info, extract_features
+from ticker_monitor.common.featurizers import comment_info
 
 logger = logging.getLogger(__name__)
 

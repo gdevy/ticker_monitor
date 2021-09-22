@@ -1,18 +1,19 @@
 import time
 
+from tqdm import tqdm
 from utility_soup.iter import ForLoopTimer
 
-from common.db import db
-from common.featurizers import counter, extract_features
-from common.praw_interface import iterate_comment_forest, auth_praw
+from ticker_monitor.common.db import db
+from ticker_monitor.common.featurizers import counter, extract_features
+from ticker_monitor.common.praw_interface import iterate_comment_forest, auth_praw
 
 if __name__ == '__main__':
     import dotenv
     import logging
 
     clear_db = True
-    if clear_db:
-        db.drop_collection('comment')
+    # if clear_db:
+    #     db.drop_collection('comment')
 
     featurizers = [counter, ]
 
@@ -24,11 +25,11 @@ if __name__ == '__main__':
     comment_collection = db['comment']
     feature_collection = db['feature']
 
-    posts = post_collection.find({}, limit=2)
+    posts = post_collection.find({})
     start = time.time()
 
     timer = ForLoopTimer()
-    for post in timer(posts):
+    for post in timer(tqdm(posts)):
         comments = iterate_comment_forest(reddit.submission(post['post_id']).comments)
 
         if comments:
